@@ -1,1 +1,731 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AWS DevOps To-Do</title><style>body{font-family:Arial;background:#f4f7fb;margin:0}.box{max-width:760px;margin:50px auto;background:#fff;padding:30px;border-radius:14px;box-shadow:0 8px 30px #0001}form{display:flex;gap:10px}input[type=text]{padding:12px;flex:1;border:1px solid #ccc;border-radius:8px}button{padding:10px 14px;border:0;border-radius:7px;background:#16a34a;color:white;cursor:pointer}.edit{background:#4b5563}.delete{background:#dc2626}li{display:flex;gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #eee}.title{flex:1}.completed{text-decoration:line-through;color:#999}.actions{display:flex;gap:6px}.health{margin-top:20px;color:#666}@media(max-width:600px){form{flex-direction:column}}</style></head><body><div class="box"><h1>AWS DevOps To-Do</h1><p>Simple To-Do application for the DevOps practical assessment.</p><form id="f"><input id="i" type="text" placeholder="Enter a task..." required><button>Add Task</button></form><ul id="l"></ul><div class="health" id="h">Checking health...</div></div><script>async function load(){const r=await fetch('/api/tasks'),a=await r.json(),l=document.querySelector('#l');l.innerHTML='';if(!a.length){l.innerHTML='<li>No tasks yet. Add your first task.</li>';return}a.forEach(t=>{const li=document.createElement('li'),c=document.createElement('input'),s=document.createElement('span'),d=document.createElement('div'),e=document.createElement('button'),x=document.createElement('button');c.type='checkbox';c.checked=t.completed;c.onchange=()=>update(t.id,{completed:c.checked});s.textContent=t.title;s.className='title'+(t.completed?' completed':'');e.textContent='Edit';e.className='edit';e.onclick=async()=>{const n=prompt('Update task:',t.title);if(n!==null)await update(t.id,{title:n})};x.textContent='Delete';x.className='delete';x.onclick=async()=>{if(confirm('Delete this task?')){await fetch('/api/tasks/'+t.id,{method:'DELETE'});load()}};d.className='actions';d.append(e,x);li.append(c,s,d);l.append(li)})}async function update(id,b){await fetch('/api/tasks/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});load()}document.querySelector('#f').onsubmit=async e=>{e.preventDefault();const i=document.querySelector('#i');await fetch('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:i.value})});i.value='';load()};fetch('/health').then(r=>r.json()).then(x=>document.querySelector('#h').textContent='Service health: '+x.status.toUpperCase());load();</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AWS DevOps To-Do</title>
+
+    <style>
+
+        /* =====================================================
+           EASY CI/CD DEMO SECTION
+           Change these values to demonstrate deployment
+           ===================================================== */
+
+        /* Page background */
+        body {
+            margin: 0;
+            padding: 0;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            background-color: #f5f7fb;
+
+            color: #1f2937;
+        }
+
+        /* Main application heading */
+        .app-title {
+            color: #2563eb;
+
+            text-align: center;
+
+            margin-bottom: 5px;
+        }
+
+        /* Subtitle */
+        .subtitle {
+            text-align: center;
+
+            color: #6b7280;
+
+            margin-top: 0;
+        }
+
+        /* Main container */
+        .container {
+            width: 90%;
+
+            max-width: 800px;
+
+            margin: 40px auto;
+
+            background-color: #ffffff;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Input area */
+        .input-section {
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 25px;
+        }
+
+        /* Task input */
+        #taskInput {
+            flex: 1;
+
+            padding: 12px;
+
+            border: 1px solid #d1d5db;
+
+            border-radius: 6px;
+
+            font-size: 16px;
+        }
+
+        /* =====================================================
+           ADD TASK BUTTON
+           Change this color for your CI/CD demonstration
+           ===================================================== */
+
+        .add-button {
+            padding: 12px 20px;
+
+            background-color: #16a34a;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 6px;
+
+            cursor: pointer;
+
+            font-size: 16px;
+        }
+
+        .add-button:hover {
+            background-color: #15803d;
+        }
+
+        /* Task list */
+        #taskList {
+            list-style: none;
+
+            padding: 0;
+
+            margin-top: 25px;
+        }
+
+        /* Individual task */
+        .task-item {
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 12px;
+
+            margin-bottom: 10px;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 8px;
+
+            background-color: #fafafa;
+        }
+
+        /* Completed task */
+        .completed {
+            text-decoration: line-through;
+
+            color: #9ca3af;
+        }
+
+        /* Task text */
+        .task-text {
+            flex: 1;
+
+            margin-left: 10px;
+
+            cursor: pointer;
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+
+            gap: 8px;
+        }
+
+        .edit-button {
+            background-color: #f59e0b;
+
+            color: white;
+
+            border: none;
+
+            padding: 7px 12px;
+
+            border-radius: 5px;
+
+            cursor: pointer;
+        }
+
+        .delete-button {
+            background-color: #dc2626;
+
+            color: white;
+
+            border: none;
+
+            padding: 7px 12px;
+
+            border-radius: 5px;
+
+            cursor: pointer;
+        }
+
+        /* Health status */
+        .health {
+            text-align: center;
+
+            margin-top: 25px;
+
+            padding: 10px;
+
+            border-radius: 6px;
+
+            background-color: #ecfdf5;
+
+            color: #166534;
+
+            font-weight: bold;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+
+            margin-top: 25px;
+
+            color: #6b7280;
+
+            font-size: 14px;
+        }
+
+        /* Mobile layout */
+        @media (max-width: 600px) {
+
+            .input-section {
+                flex-direction: column;
+            }
+
+            .task-item {
+                flex-direction: column;
+
+                align-items: flex-start;
+
+                gap: 10px;
+            }
+
+            .action-buttons {
+                width: 100%;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="container">
+
+        <!-- =================================================
+             APPLICATION HEADER
+             ================================================= -->
+
+        <h1 class="app-title">
+            AWS DevOps To-Do
+        </h1>
+
+        <p class="subtitle">
+            GitHub Actions CI/CD Demo
+        </p>
+
+
+        <!-- =================================================
+             ADD TASK SECTION
+             ================================================= -->
+
+        <div class="input-section">
+
+            <input
+                type="text"
+                id="taskInput"
+                placeholder="Enter a new task"
+            >
+
+            <button
+                class="add-button"
+                onclick="addTask()"
+            >
+                Add Task
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             TASK LIST
+             ================================================= -->
+
+        <ul id="taskList"></ul>
+
+
+        <!-- =================================================
+             APPLICATION HEALTH
+             ================================================= -->
+
+        <div class="health">
+
+            Service health:
+            <span id="healthStatus">
+                Checking...
+            </span>
+
+        </div>
+
+
+        <!-- =================================================
+             FOOTER
+             ================================================= -->
+
+        <div class="footer">
+
+            AWS EC2 |
+            Node.js |
+            PM2 |
+            Nginx |
+            GitHub Actions
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        /* =====================================================
+           LOAD TASKS
+           ===================================================== */
+
+        async function loadTasks() {
+
+            try {
+
+                const response = await fetch("/tasks");
+
+                const tasks = await response.json();
+
+                displayTasks(tasks);
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to load tasks:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           DISPLAY TASKS
+           ===================================================== */
+
+        function displayTasks(tasks) {
+
+            const taskList =
+                document.getElementById("taskList");
+
+            taskList.innerHTML = "";
+
+
+            tasks.forEach(task => {
+
+                const listItem =
+                    document.createElement("li");
+
+                listItem.className =
+                    "task-item";
+
+
+                const checkbox =
+                    document.createElement("input");
+
+                checkbox.type = "checkbox";
+
+                checkbox.checked =
+                    task.completed;
+
+                checkbox.addEventListener(
+                    "change",
+                    () => toggleTask(task)
+                );
+
+
+                const taskText =
+                    document.createElement("span");
+
+                taskText.className =
+                    "task-text";
+
+
+                if (task.completed) {
+
+                    taskText.classList.add(
+                        "completed"
+                    );
+
+                }
+
+
+                taskText.textContent =
+                    task.title;
+
+
+                const actionButtons =
+                    document.createElement("div");
+
+                actionButtons.className =
+                    "action-buttons";
+
+
+                const editButton =
+                    document.createElement("button");
+
+                editButton.className =
+                    "edit-button";
+
+                editButton.textContent =
+                    "Edit";
+
+                editButton.onclick =
+                    () => editTask(task);
+
+
+                const deleteButton =
+                    document.createElement("button");
+
+                deleteButton.className =
+                    "delete-button";
+
+                deleteButton.textContent =
+                    "Delete";
+
+                deleteButton.onclick =
+                    () => deleteTask(task);
+
+
+                actionButtons.appendChild(
+                    editButton
+                );
+
+                actionButtons.appendChild(
+                    deleteButton
+                );
+
+
+                listItem.appendChild(
+                    checkbox
+                );
+
+                listItem.appendChild(
+                    taskText
+                );
+
+                listItem.appendChild(
+                    actionButtons
+                );
+
+
+                taskList.appendChild(
+                    listItem
+                );
+
+            });
+
+        }
+
+
+        /* =====================================================
+           ADD TASK
+           ===================================================== */
+
+        async function addTask() {
+
+            const input =
+                document.getElementById("taskInput");
+
+            const title =
+                input.value.trim();
+
+
+            if (!title) {
+
+                alert(
+                    "Please enter a task."
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                await fetch("/tasks", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        title: title
+                    })
+
+                });
+
+
+                input.value = "";
+
+                await loadTasks();
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to add task:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           UPDATE / COMPLETE TASK
+           ===================================================== */
+
+        async function toggleTask(task) {
+
+            try {
+
+                await fetch(
+                    /tasks/${task.id},
+                    {
+
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            title: task.title,
+
+                            completed:
+                                !task.completed
+
+                        })
+
+                    }
+                );
+
+
+                await loadTasks();
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to update task:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           EDIT TASK
+           ===================================================== */
+
+        async function editTask(task) {
+
+            const newTitle =
+                prompt(
+                    "Update task:",
+                    task.title
+                );
+
+
+            if (!newTitle) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await fetch(
+                    /tasks/${task.id},
+                    {
+
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            title:
+                                newTitle,
+
+                            completed:
+                                task.completed
+
+                        })
+
+                    }
+                );
+
+
+                await loadTasks();
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to edit task:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           DELETE TASK
+           ===================================================== */
+
+        async function deleteTask(task) {
+
+            const confirmed =
+                confirm(
+                    "Delete this task?"
+                );
+
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await fetch(
+                    /tasks/${task.id},
+                    {
+
+                        method: "DELETE"
+
+                    }
+                );
+
+
+                await loadTasks();
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to delete task:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =====================================================
+           HEALTH CHECK
+           ===================================================== */
+
+        async function checkHealth() {
+
+            const status =
+                document.getElementById(
+                    "healthStatus"
+                );
+
+
+            try {
+
+                const response =
+                    await fetch("/health");
+
+
+                if (response.ok) {
+
+                    status.textContent =
+                        "OK";
+
+                } else {
+
+                    status.textContent =
+                        "Unavailable";
+
+                }
+
+            } catch (error) {
+
+                status.textContent =
+                    "Unavailable";
+
+            }
+
+        }
+
+
+        /* =====================================================
+           INITIAL LOAD
+           ===================================================== */
+
+        loadTasks();
+
+        checkHealth();
+
+    </script>
+
+</body>
+
+</html>
