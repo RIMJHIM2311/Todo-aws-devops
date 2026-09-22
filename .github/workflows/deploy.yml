@@ -18,7 +18,7 @@ jobs:
             cd /opt/todo-app
             git fetch origin
             git reset --hard origin/main
-            npm ci --omit=dev
+            npm install --omit=dev
             pm2 restart todo-app --update-env
             sleep 3
             curl -f http://127.0.0.1:3000/health
